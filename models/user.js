@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Joi = require('joi');
 const bcrypt = require('bcrypt');
+const crypto= require('crypto');
 const config = require('config');
 const jwt = require('jsonwebtoken');
 const emailRegex = /^[\w]+[\w\.]+@([\w-])+(\.)+[\w-]{2,4}$/;
@@ -24,13 +25,20 @@ const schema= new mongoose.Schema({
     isAdmin:{
         type : Boolean,
         default:false 
-    }
+    },
+    passwordResetToken:String,
 })
 schema.methods.generateAuthToken = function(){
     const token = jwt.sign({_id:this._id,isAdmin : this.isAdmin},config.get('jwt_private'));
     return token ;
 
 }
+schema.methods.createPasswordResetToken=function(){
+    const resetToken=crypto.randomBytes(32).toString('hex');
+    this.passwordResetToken=crypto.createHash('sha256').update(resetToken).digest('hex');
+    return resetToken;
+}
+
 const User = mongoose.model('user' ,schema);
 function validateUser(user){
     const schema = Joi.object({
@@ -40,10 +48,17 @@ function validateUser(user){
     });
     return schema.validate(user);
 }
+function validatePassword(user){
+    const schema = Joi.object({
+        password:Joi.string().min(8).regex(passwordRegex)
+    });
+    return schema.validate(user);
+}
 schema.set('toObject', { getters: true });
 schema.set('toJSON', { getters: true });
 
 module.exports= {
     User :User ,
-    validate : validateUser
+    validate : validateUser,
+    validatePassword
 }

@@ -20,10 +20,12 @@ router.post('/',async (req,res)=>{
         if(!user){
             /// we dont send 404 because we dont the user to know that the email is not correct
             /// to avoid attacks like bruteforcing
+            console.log('in if condition')
             return res.status(400).send('invalid email or password');
         }
         const validPassword = await bcrypt.compare(req.body.password , user.password);
         /// todo log to winston
+        console.log(validPassword)
         if(!validPassword){
             return res.status(400).send('invalid email or password');
         }
